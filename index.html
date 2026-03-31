@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CineVault</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <header class="header">
+    <h1>CineVault 🎬</h1>
+    <div class="search-bar">
+      <input type="text" id="searchInput" placeholder="Search for a movie..." />
+    </div>
+  </header>
+
+  <main class="main">
+
+    <section class="results-section">
+      <h2 id="resultsTitle">Search for a movie to get started</h2>
+      <div id="loading" class="loading hidden">Loading...</div>
+      <div id="movieGrid" class="movie-grid"></div>
+      <p id="emptySearch" class="empty-state hidden">No movies found. Try a different search.</p>
+    </section>
+
+    <aside class="watchlist-sidebar">
+      <h2> My Vault 💼</h2>
+      <div id="watchlistItems">
+        <p id="emptyWatchlist" class="empty-state">Your watchlist is empty. Start searching!</p>
+      </div>
+      <button id="randomBtn" class="random-btn hidden">🎲 Random Movie Night</button>
+    </aside>
+
+  </main>
+
+  <script src="script.js"></script>
+</body>
+</html>
