@@ -1,120 +1,149 @@
 const API_KEY = "84561f39";
 
-const searchInput = document.getElementById("searchInput");
-const movieGrid = document.getElementById("movieGrid");
-const loading = document.getElementById("loading");
-const emptySearch = document.getElementById("emptySearch");
-const resultsTitle= document.getElementById("resultsTitle");
-const watchlistItems = document.getElementById("watchlistItems");
-const emptyWatchlist= document.getElementById("emptyWatchlist");
-const randomBtn = document.getElementById("randomBtn");
+const TRENDING_QUERIES  = ["avengers", "batman", "spider-man", "inception", "joker"];
+const TOP_RATED_QUERIES = ["godfather", "schindler", "dark knight", "forrest gump", "interstellar"];
 
-let watchlist = JSON.parse(localStorage.getItem("watchlist")) || [];
+const searchBtn     = document.getElementById("searchBtn");
+const closeSearch   = document.getElementById("closeSearch");
+const searchModal   = document.getElementById("searchModal");
+const searchInput   = document.getElementById("searchInput");
+const searchResults = document.getElementById("searchResults");
+const trendingRow   = document.getElementById("trendingRow");
+const topRatedRow   = document.getElementById("topRatedRow");
+const favsRow       = document.getElementById("favsRow");
 
+let favourites = JSON.parse(localStorage.getItem("movieFavs")) || [];
+
+
+
+searchBtn.addEventListener("click", () => {
+  searchModal.classList.add("active");
+  searchInput.focus();
+});
+
+closeSearch.addEventListener("click", closeModal);
+
+searchModal.addEventListener("click", (e) => {
+  if (e.target === searchModal) closeModal();
+});
+
+document.addEventListener("keydown", (e) => {
+  if (e.key === "Escape") closeModal();
+});
+
+function closeModal() {
+  searchModal.classList.remove("active");
+  searchInput.value = "";
+  searchResults.innerHTML = "";
+}
+
+// ─── Live Search (debounced) ───
 let debounceTimer;
-
 searchInput.addEventListener("input", () => {
   clearTimeout(debounceTimer);
   const query = searchInput.value.trim();
-
-  if (!query) {
-    movieGrid.innerHTML = "";
-    emptySearch.classList.add("hidden");
-    loading.classList.add("hidden");
-    resultsTitle.textContent = "Search for a movie to get started";
-    return;
-  }
-
+  if (!query) { searchResults.innerHTML = ""; return; }
   debounceTimer = setTimeout(() => searchMovies(query), 400);
 });
 
-
 async function searchMovies(query) {
-  loading.classList.remove("hidden");
-  movieGrid.innerHTML = "";
-  emptySearch.classList.add("hidden");
-  resultsTitle.textContent = `Results for "${query}"`;
-
+  searchResults.innerHTML = `<p class="search-hint">Searching...</p>`;
   try {
-    const res = await fetch(`https://www.omdbapi.com/?apikey=${API_KEY}&s=${query}`);
+    const res  = await fetch(`https://www.omdbapi.com/?apikey=${API_KEY}&s=${encodeURIComponent(query)}&type=movie`);
     const data = await res.json();
-
-    loading.classList.add("hidden");
-
     if (data.Response === "False") {
-      emptySearch.classList.remove("hidden");
+      searchResults.innerHTML = `<p class="search-hint">No results found for "<strong>${query}</strong>".</p>`;
       return;
     }
-
-    renderMovies(data.Search);
-  } catch (err) {
-    loading.classList.add("hidden");
-    movieGrid.innerHTML = `<p class="empty-state">Something went wrong. Please try again.</p>`;
+    searchResults.innerHTML = data.Search.map(movie => buildCard(movie, "search")).join("");
+  } catch {
+    searchResults.innerHTML = `<p class="search-hint">Something went wrong. Please try again.</p>`;
   }
 }
 
-function renderMovies(movies) {
-  movieGrid.innerHTML = movies.map((movie) => {
-    const inList = watchlist.some((w) => w.imdbID === movie.imdbID);
-    const poster = movie.Poster !== "N/A"
-      ? movie.Poster
-      : "https://via.placeholder.com/160x240/1a1a1a/555?text=No+Image";
 
-    return `
-      <div class="card">
-        <img src="${poster}" alt="${movie.Title}" />
-        <div class="card-info">
-          <h3 title="${movie.Title}">${movie.Title}</h3>
-          <p>${movie.Year} · ${movie.Type}</p>
-          <button
-            class="${inList ? "remove" : ""}"
-            onclick="toggleWatchlist('${movie.imdbID}', '${movie.Title.replace(/'/g, "\\'")}')">
-            ${inList ? "- Remove" : "+ Add to Watchlist"}
-          </button>
-        </div>
-      </div>
-    `;
-  }).join("");
+async function loadRow(queries, container) {
+  const movies = [];
+  for (const q of queries) {
+    try {
+      const res  = await fetch(`https://www.omdbapi.com/?apikey=${API_KEY}&s=${q}&type=movie`);
+      const data = await res.json();
+      if (data.Response === "True") {
+        movies.push(data.Search[0]);
+      }
+    } catch { /* skip on error */ }
+  }
+  container.innerHTML = movies.length
+    ? movies.map(m => buildCard(m, "row")).join("")
+    : `<p class="empty-favs">Could not load movies right now.</p>`;
 }
 
-function toggleWatchlist(id, title) {
-  const exists = watchlist.find((w) => w.imdbID === id);
 
+function renderFavourites() {
+  if (favourites.length === 0) {
+    favsRow.innerHTML = `<p class="empty-favs">Add movies to your watchlist and they'll appear here.</p>`;
+    return;
+  }
+  favsRow.innerHTML = favourites.map(m => buildCard(m, "row")).join("");
+}
+
+function toggleFav(imdbID, title, poster) {
+  const exists = favourites.find(f => f.imdbID === imdbID);
   if (exists) {
-    watchlist = watchlist.filter((w) => w.imdbID !== id);
+    favourites = favourites.filter(f => f.imdbID !== imdbID);
   } else {
-    watchlist.push({ imdbID: id, Title: title });
+    favourites.push({ imdbID, Title: title, Poster: poster });
   }
-
-  localStorage.setItem("watchlist", JSON.stringify(watchlist));
-
-  renderWatchlist();
-
+  localStorage.setItem("movieFavs", JSON.stringify(favourites));
+  renderFavourites();
   const query = searchInput.value.trim();
   if (query) searchMovies(query);
 }
 
-function renderWatchlist() {
-  if (watchlist.length === 0) {
-    watchlistItems.innerHTML = `<p id="emptyWatchlist" class="empty-state">Your watchlist is empty. Start searching!</p>`;
-    randomBtn.classList.add("hidden");
-    return;
+
+// card
+function buildCard(movie, context) {
+  const isFav   = favourites.some(f => f.imdbID === movie.imdbID);
+  const poster  = movie.Poster && movie.Poster !== "N/A"
+    ? movie.Poster
+    : "https://placehold.co/200x300/1a1a1a/555?text=No+Image";
+  const safeTitle  = (movie.Title || "").replace(/'/g, "\\'");
+
+  if (context === "search") {
+    return `
+      <div class="result-card">
+        <img src="${poster}" alt="${movie.Title}" />
+        <div class="result-info">
+          <h3>${movie.Title}</h3>
+          <p>${movie.Year} · ${movie.Type || "movie"}</p>
+          <button
+            class="fav-btn ${isFav ? "active" : ""}"
+            onclick="toggleFav('${movie.imdbID}', '${safeTitle}', '${poster}')">
+            ${isFav ? "❤️ Saved" : "🤍 Save"}
+          </button>
+        </div>
+      </div>`;
   }
 
-  watchlistItems.innerHTML = watchlist.map((movie) => `
-    <div class="watch-item">
-      <span>${movie.Title}</span>
-      <button onclick="toggleWatchlist('${movie.imdbID}', '${movie.Title.replace(/'/g, "\\'")}')">✕</button>
-    </div>
-  `).join("");
-
-  randomBtn.classList.remove("hidden");
+// Row card (trending,top-rated,favs)
+  return `
+    <div class="movie-card" onclick="toggleFav('${movie.imdbID}', '${safeTitle}', '${poster}')">
+      <img src="${poster}" alt="${movie.Title}" />
+      <div class="card-overlay">
+        <p class="card-title">${movie.Title}</p>
+        <span class="card-year">${movie.Year || ""}</span>
+        <span class="card-heart ${isFav ? "saved" : ""}">${isFav ? "❤️" : "🤍"}</span>
+      </div>
+    </div>`;
 }
 
-randomBtn.addEventListener("click", () => {
-  if (watchlist.length === 0) return;
-  const pick = watchlist[Math.floor(Math.random() * watchlist.length)];
-  alert(`🎬 Watch tonight: "${pick.Title}"`);
-});
 
-renderWatchlist();
+loadRow(TRENDING_QUERIES,  trendingRow);
+loadRow(TOP_RATED_QUERIES, topRatedRow);
+renderFavourites();
+
+
+const navbar = document.getElementById("navbar");
+window.addEventListener("scroll", () => {
+  navbar.classList.toggle("scrolled", window.scrollY > 60);
+});

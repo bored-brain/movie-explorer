@@ -3,36 +3,97 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>CineVault</title>
+  <meta name="description" content="MovieWatch — Discover trending, top rated, and your favourite movies in one cinematic experience." />
+  <title>MovieWatch</title>
+
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
 
-  <header class="header">
-    <h1>CineVault 🎬</h1>
-    <div class="search-bar">
-      <input type="text" id="searchInput" placeholder="Search for a movie..." />
+  <!-- Navbar -->
+  <nav class="navbar" id="navbar">
+    <div class="nav-logo">CINEVAULT</div>
+    <div class="nav-links">
+      <a href="#trending">Trending</a>
+      <a href="#top-rated">Top Rated</a>
+      <a href="#my-favs">My Favs</a>
     </div>
-  </header>
+    <button class="search-btn" id="searchBtn" aria-label="Search movies">
+      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+      </svg>
+    </button>
+  </nav>
 
-  <main class="main">
+  <!-- YouTube Montage -->
+  <section class="hero" id="hero">
+    <!-- <div class="hero-video-wrapper">
+      <video loop controls autoplay>
+        <source src="CINEMA - A Tribute To The Beauty Of Cinema-1.mp4" type="video/mp4">
+      </video>
+    </div> -->
+    <div class="hero-overlay">
+      <div class="hero-content">
+        <p class="hero-tagline">Every frame tells a story</p>
+        <h1 class="hero-title">Scenes That<br/>Defined Cinema</h1>
+        <p class="hero-sub">Discover and save the greatest films ever made.</p>
+        <a href="#trending" class="hero-cta">Explore Now</a>
+      </div>
+    </div>
+    <div class="hero-gradient-bottom"></div>
+  </section>
 
-    <section class="results-section">
-      <h2 id="resultsTitle">Search for a movie to get started</h2>
-      <div id="loading" class="loading hidden">Loading...</div>
-      <div id="movieGrid" class="movie-grid"></div>
-      <p id="emptySearch" class="empty-state hidden">No movies found. Try a different search.</p>
+  <!--  Main Content -->
+  <main class="content">
+
+    <!-- Trending -->
+    <section class="movie-row" id="trending">
+      <h2 class="row-title"><span class="accent">🔥</span> Trending Now</h2>
+      <div class="row-scroll" id="trendingRow">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+      </div>
     </section>
 
-    <aside class="watchlist-sidebar">
-      <h2> My Vault 💼</h2>
-      <div id="watchlistItems">
-        <p id="emptyWatchlist" class="empty-state">Your watchlist is empty. Start searching!</p>
+    <!--  Top Rated -->
+    <section class="movie-row" id="top-rated">
+      <h2 class="row-title"><span class="accent">⭐</span> Top Rated</h2>
+      <div class="row-scroll" id="topRatedRow">
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
+        <div class="skeleton-card"></div>
       </div>
-      <button id="randomBtn" class="random-btn hidden">🎲 Random Movie Night</button>
-    </aside>
+    </section>
+
+    <!-- ❤️ My Favourites -->
+    <section class="movie-row" id="my-favs">
+      <h2 class="row-title"><span class="accent">❤️</span> My Vault</h2>
+      <div class="row-scroll" id="favsRow">
+        <p class="empty-favs">Add movies to your watchlist and they'll appear here.</p>
+      </div>
+    </section>
 
   </main>
+
+  <!-- Search Modal -->
+  <div class="search-modal" id="searchModal">
+    <div class="search-inner">
+      <div class="search-box">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
+        </svg>
+        <input type="text" id="searchInput" placeholder="Search movies, series..." autocomplete="off" />
+        <button class="close-btn" id="closeSearch" aria-label="Close search">✕</button>
+      </div>
+      <div class="search-results" id="searchResults"></div>
+    </div>
+  </div>
 
   <script src="script.js"></script>
 </body>
