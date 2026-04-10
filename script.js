@@ -1,149 +1,169 @@
 const API_KEY = "84561f39";
 
-const TRENDING_QUERIES  = ["avengers", "batman", "spider-man", "inception", "joker"];
-const TOP_RATED_QUERIES = ["godfather", "schindler", "dark knight", "forrest gump", "interstellar"];
+const TRENDING_QUERIES = ["avengers", "batman", "spider-man", "inception", "joker", "interstellar", "matrix", "pulp fiction"];
+const TOP_RATED_QUERIES = ["the godfather", "schindler's list", "the dark knight", "forrest gump", "pulp fiction", "lord of the rings"];
 
-const searchBtn     = document.getElementById("searchBtn");
-const closeSearch   = document.getElementById("closeSearch");
-const searchModal   = document.getElementById("searchModal");
-const searchInput   = document.getElementById("searchInput");
-const searchResults = document.getElementById("searchResults");
-const trendingRow   = document.getElementById("trendingRow");
-const topRatedRow   = document.getElementById("topRatedRow");
-const favsRow       = document.getElementById("favsRow");
+const searchInput = document.getElementById("searchInput");
+const searchCard = document.getElementById("searchCard");
+const searchCardGrid = document.getElementById("searchCardGrid");
+const closeSearchCard = document.getElementById("closeSearchCard");
+const trendingGrid = document.getElementById("trendingGrid");
+const topRatedGrid = document.getElementById("topRatedGrid");
+const vaultGrid = document.getElementById("vaultGrid");
 
 let favourites = JSON.parse(localStorage.getItem("movieFavs")) || [];
 
-
-
-searchBtn.addEventListener("click", () => {
-  searchModal.classList.add("active");
-  searchInput.focus();
+document.addEventListener("DOMContentLoaded", () => {
+    loadCategory(TRENDING_QUERIES, trendingGrid, true);
+    loadCategory(TOP_RATED_QUERIES, topRatedGrid);
+    renderVault();
 });
 
-closeSearch.addEventListener("click", closeModal);
+let debounceTimer;
+searchInput.addEventListener("input", () => {
+    clearTimeout(debounceTimer);
+    const query = searchInput.value.trim();
+    if (!query) {
+        hideSearchCard();
+        return;
+    }
+    debounceTimer = setTimeout(() => {
+        showSearchCard();
+        searchMovies(query);
+    }, 400);
+});
 
-searchModal.addEventListener("click", (e) => {
-  if (e.target === searchModal) closeModal();
+closeSearchCard.addEventListener("click", () => {
+    hideSearchCard();
+    searchInput.value = "";
 });
 
 document.addEventListener("keydown", (e) => {
-  if (e.key === "Escape") closeModal();
+    if (e.key === "Escape") hideSearchCard();
 });
 
-function closeModal() {
-  searchModal.classList.remove("active");
-  searchInput.value = "";
-  searchResults.innerHTML = "";
+document.addEventListener("click", (e) => {
+    if (!searchCard.contains(e.target) && e.target !== searchInput && !searchCard.classList.contains("hidden")) {
+        hideSearchCard();
+    }
+});
+
+function showSearchCard() {
+    searchCard.classList.remove("hidden");
+    document.body.style.overflow = "hidden";
 }
 
-// ─── Live Search (debounced) ───
-let debounceTimer;
-searchInput.addEventListener("input", () => {
-  clearTimeout(debounceTimer);
-  const query = searchInput.value.trim();
-  if (!query) { searchResults.innerHTML = ""; return; }
-  debounceTimer = setTimeout(() => searchMovies(query), 400);
-});
+function hideSearchCard() {
+    searchCard.classList.add("hidden");
+    document.body.style.overflow = "auto";
+}
+
+async function fetchMovieDetails(imdbID) {
+    try {
+        const res = await fetch(`https://www.omdbapi.com/?apikey=${API_KEY}&i=${imdbID}`);
+        return await res.json();
+    } catch {
+        return null;
+    }
+}
 
 async function searchMovies(query) {
-  searchResults.innerHTML = `<p class="search-hint">Searching...</p>`;
-  try {
-    const res  = await fetch(`https://www.omdbapi.com/?apikey=${API_KEY}&s=${encodeURIComponent(query)}&type=movie`);
-    const data = await res.json();
-    if (data.Response === "False") {
-      searchResults.innerHTML = `<p class="search-hint">No results found for "<strong>${query}</strong>".</p>`;
-      return;
-    }
-    searchResults.innerHTML = data.Search.map(movie => buildCard(movie, "search")).join("");
-  } catch {
-    searchResults.innerHTML = `<p class="search-hint">Something went wrong. Please try again.</p>`;
-  }
-}
-
-
-async function loadRow(queries, container) {
-  const movies = [];
-  for (const q of queries) {
+    searchCardGrid.innerHTML = `<div class="loading">Searching for "${query}"...</div>`;
     try {
-      const res  = await fetch(`https://www.omdbapi.com/?apikey=${API_KEY}&s=${q}&type=movie`);
-      const data = await res.json();
-      if (data.Response === "True") {
-        movies.push(data.Search[0]);
-      }
-    } catch { /* skip on error */ }
-  }
-  container.innerHTML = movies.length
-    ? movies.map(m => buildCard(m, "row")).join("")
-    : `<p class="empty-favs">Could not load movies right now.</p>`;
+        const res = await fetch(`https://www.omdbapi.com/?apikey=${API_KEY}&s=${encodeURIComponent(query)}&type=movie`);
+        const data = await res.json();
+        if (data.Response === "False") {
+            searchCardGrid.innerHTML = `<div class="loading">No results found for "${query}".</div>`;
+            return;
+        }
+        const detailedMovies = await Promise.all(
+            data.Search.slice(0, 10).map(m => fetchMovieDetails(m.imdbID))
+        );
+        searchCardGrid.innerHTML = detailedMovies.filter(m => m).map(movie => buildCard(movie)).join("");
+    } catch {
+        searchCardGrid.innerHTML = `<div class="loading">Something went wrong. Please try again.</div>`;
+    }
 }
 
-
-function renderFavourites() {
-  if (favourites.length === 0) {
-    favsRow.innerHTML = `<p class="empty-favs">Add movies to your watchlist and they'll appear here.</p>`;
-    return;
-  }
-  favsRow.innerHTML = favourites.map(m => buildCard(m, "row")).join("");
+async function loadCategory(queries, gridElement, shouldSort = false) {
+    let movies = [];
+    for (const q of queries) {
+        try {
+            const res = await fetch(`https://www.omdbapi.com/?apikey=${API_KEY}&s=${q}&type=movie`);
+            const data = await res.json();
+            if (data.Response === "True") {
+                movies.push(data.Search[0]);
+            }
+        } catch { /* skip */ }
+    }
+    const detailedMovies = await Promise.all(
+        movies.map(m => fetchMovieDetails(m.imdbID))
+    );
+    let finalMovies = detailedMovies.filter(m => m);
+    if (shouldSort) {
+        finalMovies.sort((a, b) => {
+            const rA = a.imdbRating !== "N/A" ? parseFloat(a.imdbRating) : 0;
+            const rB = b.imdbRating !== "N/A" ? parseFloat(b.imdbRating) : 0;
+            return rB - rA;
+        });
+    }
+    if (finalMovies.length) {
+        gridElement.innerHTML = finalMovies.map(m => buildCard(m)).join("");
+    } else {
+        gridElement.innerHTML = `<div class="loading">Could not load movies.</div>`;
+    }
 }
 
-function toggleFav(imdbID, title, poster) {
-  const exists = favourites.find(f => f.imdbID === imdbID);
-  if (exists) {
-    favourites = favourites.filter(f => f.imdbID !== imdbID);
-  } else {
-    favourites.push({ imdbID, Title: title, Poster: poster });
-  }
-  localStorage.setItem("movieFavs", JSON.stringify(favourites));
-  renderFavourites();
-  const query = searchInput.value.trim();
-  if (query) searchMovies(query);
+async function renderVault() {
+    if (favourites.length === 0) {
+        vaultGrid.innerHTML = `<p class="empty-state">Your vault is currently empty. Start adding movies!</p>`;
+        return;
+    }
+    const detailedFavs = await Promise.all(
+        favourites.map(async (f) => {
+            if (f.imdbRating) return f;
+            const details = await fetchMovieDetails(f.imdbID);
+            return details || f;
+        })
+    );
+    vaultGrid.innerHTML = detailedFavs.map(m => buildCard(m)).join("");
 }
 
+function toggleFav(imdbID, title, poster, year, rating) {
+    const exists = favourites.find(f => f.imdbID === imdbID);
+    if (exists) {
+        favourites = favourites.filter(f => f.imdbID !== imdbID);
+    } else {
+        favourites.push({ imdbID, Title: title, Poster: poster, Year: year, imdbRating: rating });
+    }
+    localStorage.setItem("movieFavs", JSON.stringify(favourites));
+    renderVault();
+    document.querySelectorAll(`.card[data-id="${imdbID}"] .fav-toggle-btn`).forEach(btn => {
+        const isNowFav = favourites.some(f => f.imdbID === imdbID);
+        btn.textContent = isNowFav ? "REMOVE FROM VAULT" : "ADD TO VAULT";
+        btn.classList.toggle('remove', isNowFav);
+    });
+}
 
-// card
-function buildCard(movie, context) {
-  const isFav   = favourites.some(f => f.imdbID === movie.imdbID);
-  const poster  = movie.Poster && movie.Poster !== "N/A"
-    ? movie.Poster
-    : "https://placehold.co/200x300/1a1a1a/555?text=No+Image";
-  const safeTitle  = (movie.Title || "").replace(/'/g, "\\'");
-
-  if (context === "search") {
+function buildCard(movie) {
+    const isFav = favourites.some(f => f.imdbID === movie.imdbID);
+    const poster = movie.Poster && movie.Poster !== "N/A"
+        ? movie.Poster
+        : "https://images.unsplash.com/photo-1485011749176-7919864e43e7?auto=format&fit=crop&q=80&w=200&h=300";
+    const safeTitle = (movie.Title || "").replace(/'/g, "\\'");
+    const rating = movie.imdbRating && movie.imdbRating !== "N/A" ? movie.imdbRating : "—";
     return `
-      <div class="result-card">
-        <img src="${poster}" alt="${movie.Title}" />
-        <div class="result-info">
-          <h3>${movie.Title}</h3>
-          <p>${movie.Year} · ${movie.Type || "movie"}</p>
-          <button
-            class="fav-btn ${isFav ? "active" : ""}"
-            onclick="toggleFav('${movie.imdbID}', '${safeTitle}', '${poster}')">
-            ${isFav ? "❤️ Saved" : "🤍 Save"}
-          </button>
-        </div>
-      </div>`;
-  }
-
-// Row card (trending,top-rated,favs)
-  return `
-    <div class="movie-card" onclick="toggleFav('${movie.imdbID}', '${safeTitle}', '${poster}')">
-      <img src="${poster}" alt="${movie.Title}" />
-      <div class="card-overlay">
-        <p class="card-title">${movie.Title}</p>
-        <span class="card-year">${movie.Year || ""}</span>
-        <span class="card-heart ${isFav ? "saved" : ""}">${isFav ? "❤️" : "🤍"}</span>
-      </div>
-    </div>`;
+        <div class="card" data-id="${movie.imdbID}">
+            <div class="card-rating">⭐ ${rating}</div>
+            <img src="${poster}" alt="${movie.Title}" loading="lazy">
+            <div class="card-info">
+                <h3 title="${movie.Title}">${movie.Title}</h3>
+                <p>${movie.Year} · Movie</p>
+                <button 
+                    class="fav-toggle-btn ${isFav ? 'remove' : ''}" 
+                    onclick="toggleFav('${movie.imdbID}', '${safeTitle}', '${poster}', '${movie.Year}', '${rating}')">
+                    ${isFav ? 'REMOVE FROM VAULT' : 'ADD TO VAULT'}
+                </button>
+            </div>
+        </div>`;
 }
-
-
-loadRow(TRENDING_QUERIES,  trendingRow);
-loadRow(TOP_RATED_QUERIES, topRatedRow);
-renderFavourites();
-
-
-const navbar = document.getElementById("navbar");
-window.addEventListener("scroll", () => {
-  navbar.classList.toggle("scrolled", window.scrollY > 60);
-});

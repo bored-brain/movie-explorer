@@ -1,100 +1,72 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <meta name="description" content="MovieWatch — Discover trending, top rated, and your favourite movies in one cinematic experience." />
-  <title>MovieWatch</title>
-
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet" />
-  <link rel="stylesheet" href="style.css" />
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CineVault — Your immersive cinematic movie vault.">
+    <title>CINEVAULT</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Navbar -->
-  <nav class="navbar" id="navbar">
-    <div class="nav-logo">CINEVAULT</div>
-    <div class="nav-links">
-      <a href="#trending">Trending</a>
-      <a href="#top-rated">Top Rated</a>
-      <a href="#my-favs">My Favs</a>
-    </div>
-    <button class="search-btn" id="searchBtn" aria-label="Search movies">
-      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-      </svg>
-    </button>
-  </nav>
+    <header class="header">
+        <div class="header-logo">CINEVAULT</div>
+        <div class="search-bar">
+            <input type="text" id="searchInput" placeholder="Search for movies..." autocomplete="off">
+        </div>
+    </header>
 
-  <!-- YouTube Montage -->
-  <section class="hero" id="hero">
-    <!-- <div class="hero-video-wrapper">
-      <video loop controls autoplay>
-        <source src="CINEMA - A Tribute To The Beauty Of Cinema-1.mp4" type="video/mp4">
-      </video>
-    </div> -->
-    <div class="hero-overlay">
-      <div class="hero-content">
-        <p class="hero-tagline">Every frame tells a story</p>
-        <h1 class="hero-title">Scenes That<br/>Defined Cinema</h1>
-        <p class="hero-sub">Discover and save the greatest films ever made.</p>
-        <a href="#trending" class="hero-cta">Explore Now</a>
-      </div>
-    </div>
-    <div class="hero-gradient-bottom"></div>
-  </section>
-
-  <!--  Main Content -->
-  <main class="content">
-
-    <!-- Trending -->
-    <section class="movie-row" id="trending">
-      <h2 class="row-title"><span class="accent">🔥</span> Trending Now</h2>
-      <div class="row-scroll" id="trendingRow">
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-      </div>
+    <section class="hero" id="home">
+        <div class="hero-video-wrapper">
+            <video loop autoplay muted playsinline>
+                <source src="CINEMA - A Tribute To The Beauty Of Cinema-1.mp4" type="video/mp4">
+            </video>
+        </div>
+        <div class="hero-overlay"></div>
+        <div class="hero-content">
+            <p class="hero-tagline">EVERY FRAME TELLS A STORY</p>
+            <h1 class="hero-title">SCENES THAT<br>DEFINED <span class="accent-text">CINEMA</span></h1>
+            <p class="hero-sub">Experience the absolute <span class="accent-text">greatest films</span> ever made, remastered for your viewing vault.</p>
+            <a href="#trending" class="hero-cta">EXPLORE</a>
+        </div>
     </section>
 
-    <!--  Top Rated -->
-    <section class="movie-row" id="top-rated">
-      <h2 class="row-title"><span class="accent">⭐</span> Top Rated</h2>
-      <div class="row-scroll" id="topRatedRow">
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-        <div class="skeleton-card"></div>
-      </div>
-    </section>
-
-    <!-- ❤️ My Favourites -->
-    <section class="movie-row" id="my-favs">
-      <h2 class="row-title"><span class="accent">❤️</span> My Vault</h2>
-      <div class="row-scroll" id="favsRow">
-        <p class="empty-favs">Add movies to your watchlist and they'll appear here.</p>
-      </div>
-    </section>
-
-  </main>
-
-  <!-- Search Modal -->
-  <div class="search-modal" id="searchModal">
-    <div class="search-inner">
-      <div class="search-box">
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#9ca3af" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-          <circle cx="11" cy="11" r="8"/><line x1="21" y1="21" x2="16.65" y2="16.65"/>
-        </svg>
-        <input type="text" id="searchInput" placeholder="Search movies, series..." autocomplete="off" />
-        <button class="close-btn" id="closeSearch" aria-label="Close search">✕</button>
-      </div>
-      <div class="search-results" id="searchResults"></div>
+    <div class="search-card-overlay hidden" id="searchCard">
+        <div class="search-card-content">
+            <div class="search-card-header">
+                <h2 class="section-title">🔍 LIVE RESULTS</h2>
+                <button class="close-card-btn" id="closeSearchCard" aria-label="Close">✕</button>
+            </div>
+            <div id="searchCardGrid" class="movie-grid"></div>
+        </div>
     </div>
-  </div>
 
-  <script src="script.js"></script>
+    <main class="content">
+
+        <section class="movie-section" id="trending">
+            <h2 class="section-title">🔥 TRENDING NOW</h2>
+            <div class="movie-grid" id="trendingGrid">
+                <div class="loading">Fetching trending titles...</div>
+            </div>
+        </section>
+
+        <section class="movie-section" id="top-rated">
+            <h2 class="section-title">⭐ TOP RATED</h2>
+            <div class="movie-grid" id="topRatedGrid">
+                <div class="loading">Loading cinematic legends...</div>
+            </div>
+        </section>
+
+        <section class="movie-section" id="vault">
+            <h2 class="section-title">🖤 MY VAULT</h2>
+            <div class="movie-grid" id="vaultGrid">
+                <p class="empty-state">Your vault is currently empty.</p>
+            </div>
+        </section>
+
+    </main>
+
+    <script src="script.js"></script>
 </body>
 </html>
